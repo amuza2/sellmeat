@@ -1,3 +1,5 @@
+import os
+
 import httpx
 
 from models.user import Token, User, UserCreate, UserLogin
@@ -6,7 +8,7 @@ from models.order import DeliverySlot, Order, OrderCreate, OrderStatus, PaymentS
 from models.settings import AppSettings
 from auth import Session
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
 
 class APIClient:

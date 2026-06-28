@@ -1,0 +1,18 @@
+databases:
+  - name: sellmeat-db
+    databaseName: sellmeat
+    plan: free
+
+services:
+  - type: web
+    name: sellmeat-api
+    runtime: python
+    buildCommand: cd backend && pip install -e . && alembic upgrade head && python seed.py
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sellmeat-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        sync: false
