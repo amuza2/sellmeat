@@ -9,7 +9,7 @@ uv venv
 uv pip install -e .
 
 # Run the app
-python main.py
+flet run --android main.py
 ```
 
 ## Architecture
