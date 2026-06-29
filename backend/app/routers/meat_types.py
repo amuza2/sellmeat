@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -42,5 +43,9 @@ def delete_meat_type(meat_type_id: uuid.UUID, db: Session = Depends(get_db), _: 
     meat_type = db.query(MeatType).filter(MeatType.id == meat_type_id).first()
     if not meat_type:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meat type not found")
-    db.delete(meat_type)
-    db.commit()
+    try:
+        db.delete(meat_type)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot delete meat type: it has products referenced by existing orders")

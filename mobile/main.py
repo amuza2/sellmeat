@@ -1,7 +1,10 @@
 import asyncio
+import logging
 from decimal import Decimal
 
 import flet as ft
+
+logging.basicConfig(level=logging.INFO, format="%(name)s %(levelname)s: %(message)s")
 
 from auth import Session
 from services.api import APIClient

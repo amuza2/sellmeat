@@ -1,6 +1,9 @@
 from viewmodels.base import ViewModelBase, ObservableProperty, AsyncCommand
 from models.product import MeatType, Category
 from services.api import APIClient
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ManageMeatViewModel(ViewModelBase):
@@ -17,8 +20,10 @@ class ManageMeatViewModel(ViewModelBase):
         self.api = api
         self.load_meat_types_command = AsyncCommand(self._load_meat_types)
         self.create_meat_type_command = AsyncCommand(self._create_meat_type)
+        self.update_meat_type_command = AsyncCommand(self._update_meat_type)
         self.delete_meat_type_command = AsyncCommand(self._delete_meat_type)
         self.create_category_command = AsyncCommand(self._create_category)
+        self.update_category_command = AsyncCommand(self._update_category)
         self.delete_category_command = AsyncCommand(self._delete_category)
 
     async def _load_meat_types(self):
@@ -37,6 +42,7 @@ class ManageMeatViewModel(ViewModelBase):
     async def _create_meat_type(self):
         if not self.new_meat_type_name:
             return
+        self.error = ""
         try:
             await self.api.create_meat_type(self.new_meat_type_name)
             self.new_meat_type_name = ""
@@ -46,9 +52,21 @@ class ManageMeatViewModel(ViewModelBase):
             self.error = str(e)
             self.notify("error")
 
+    async def _update_meat_type(self, meat_type_id: str, name: str):
+        self.error = ""
+        try:
+            await self.api.update_meat_type(meat_type_id, name)
+            await self._load_meat_types()
+        except Exception as e:
+            self.error = str(e)
+            self.notify("error")
+
     async def _delete_meat_type(self, meat_type_id: str):
+        self.error = ""
+        logger.info(f"Deleting meat type: {meat_type_id}")
         try:
             await self.api.delete_meat_type(meat_type_id)
+            logger.info(f"Meat type deleted: {meat_type_id}")
             if self.selected_meat_type and str(self.selected_meat_type.id) == meat_type_id:
                 self.selected_meat_type = None
                 self.categories = []
@@ -72,6 +90,7 @@ class ManageMeatViewModel(ViewModelBase):
     async def _create_category(self):
         if not self.new_category_name or not self.selected_meat_type:
             return
+        self.error = ""
         try:
             await self.api.create_category(str(self.selected_meat_type.id), self.new_category_name)
             self.new_category_name = ""
@@ -82,9 +101,23 @@ class ManageMeatViewModel(ViewModelBase):
             self.error = str(e)
             self.notify("error")
 
+    async def _update_category(self, category_id: str, name: str):
+        self.error = ""
+        try:
+            await self.api.update_category(category_id, name)
+            if self.selected_meat_type:
+                self.categories = await self.api.list_categories(meat_type_id=str(self.selected_meat_type.id))
+                self.notify("categories")
+        except Exception as e:
+            self.error = str(e)
+            self.notify("error")
+
     async def _delete_category(self, category_id: str):
+        self.error = ""
+        logger.info(f"Deleting category: {category_id}")
         try:
             await self.api.delete_category(category_id)
+            logger.info(f"Category deleted: {category_id}")
             if self.selected_meat_type:
                 self.categories = await self.api.list_categories(meat_type_id=str(self.selected_meat_type.id))
                 self.notify("categories")

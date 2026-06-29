@@ -1,26 +1,37 @@
 import flet as ft
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def confirm_dialog(page: ft.Page, title: str, message: str, on_confirm, confirm_label: str = "Supprimer"):
+    logger.info(f"confirm_dialog called: {title}")
+
     def _on_yes(e):
+        logger.info(f"confirm_dialog confirmed: {title}")
         page.pop_dialog()
         on_confirm()
 
     def _on_no(e):
+        logger.info(f"confirm_dialog cancelled: {title}")
         page.pop_dialog()
 
-    page.show_dialog(
-        ft.AlertDialog(
-            modal=True,
-            title=ft.Text(title),
-            content=ft.Text(message),
-            actions=[
-                ft.TextButton(content=ft.Text("Annuler"), on_click=_on_no),
-                ft.TextButton(content=ft.Text(confirm_label, color=ft.Colors.RED), on_click=_on_yes),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
+    try:
+        page.show_dialog(
+            ft.AlertDialog(
+                modal=True,
+                title=ft.Text(title),
+                content=ft.Text(message),
+                actions=[
+                    ft.TextButton(content=ft.Text("Annuler"), on_click=_on_no),
+                    ft.TextButton(content=ft.Text(confirm_label, color=ft.Colors.RED), on_click=_on_yes),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
         )
-    )
+        logger.info(f"confirm_dialog shown successfully: {title}")
+    except Exception as ex:
+        logger.error(f"confirm_dialog error: {ex}")
 
 
 def status_badge(status: str) -> ft.Container:
