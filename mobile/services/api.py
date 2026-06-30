@@ -1,4 +1,6 @@
 import os
+import asyncio
+import logging
 
 import httpx
 
@@ -9,12 +11,14 @@ from models.settings import AppSettings
 from auth import Session
 
 BASE_URL = os.environ.get("API_BASE_URL", "https://sellmeat.onrender.com")
+logger = logging.getLogger(__name__)
 
 
 class APIClient:
     def __init__(self, session: Session):
         self.session = session
         self._client = httpx.AsyncClient(base_url=BASE_URL, timeout=30.0)
+        self._refresh_lock = asyncio.Lock()
 
     def _headers(self) -> dict:
         headers = {"Content-Type": "application/json"}
@@ -24,11 +28,54 @@ class APIClient:
         return headers
 
     async def _request(self, method: str, path: str, **kwargs) -> dict | list | None:
+        failed_access_token = self.session.access_token
         resp = await self._client.request(method, path, headers=self._headers(), **kwargs)
+        if resp.status_code == 401 and path not in {"/auth/login", "/auth/register", "/auth/refresh"}:
+            refreshed = await self._refresh_access_token(failed_access_token)
+            if refreshed:
+                resp = await self._client.request(method, path, headers=self._headers(), **kwargs)
+        if resp.status_code == 401 and path not in {"/auth/login", "/auth/register", "/auth/refresh"}:
+            self.session.logout()
         resp.raise_for_status()
         if resp.status_code == 204:
             return None
         return resp.json()
+
+    async def _refresh_access_token(self, failed_access_token: str | None) -> bool:
+        refresh_token = self.session.refresh_token
+        if not refresh_token:
+            return False
+        async with self._refresh_lock:
+            if self.session.access_token and self.session.access_token != failed_access_token:
+                return True
+            resp = await self._client.post(
+                "/auth/refresh",
+                json={"refresh_token": refresh_token},
+                headers={"Content-Type": "application/json"},
+            )
+            if resp.status_code == 401:
+                logger.info("Refresh token expired or invalid; clearing session")
+                self.session.logout()
+                return False
+            resp.raise_for_status()
+            token = Token(**resp.json())
+            self.session.set_tokens(token.access_token, token.refresh_token)
+            return True
+
+    async def restore_session(self) -> bool:
+        if not self.session.is_authenticated:
+            return False
+        try:
+            user = await self.get_me()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code != 401:
+                raise
+            refreshed = await self._refresh_access_token(self.session.access_token)
+            if not refreshed:
+                return False
+            user = await self.get_me()
+        self.session.set_user(user)
+        return True
 
     # --- Auth ---
     async def register(self, data: UserCreate) -> User:

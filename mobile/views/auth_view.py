@@ -14,7 +14,7 @@ class AuthView:
         self._build()
 
     def _build(self):
-        title = ft.Text("SellMeat", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_700)
+        title = ft.Text("لحم طازج", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_700)
         subtitle = ft.Text("Viande fraîche livrée chez vous", size=14, color=ft.Colors.GREY_600)
 
         self.email_field = ft.TextField(
@@ -138,7 +138,7 @@ class AuthView:
     def render(self) -> ft.Control:
         return ft.Container(
             content=self.content,
-            alignment=ft.Alignment.CENTER,
+            alignment=ft.Alignment(0, 0),
             expand=True,
             padding=30,
         )

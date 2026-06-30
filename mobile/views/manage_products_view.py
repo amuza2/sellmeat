@@ -26,8 +26,8 @@ class ManageProductsView:
 
         self.refresh_btn = ft.TextButton("Actualiser", icon=ft.Icons.REFRESH, on_click=lambda e: asyncio.create_task(self._on_refresh()))
 
-        self.meat_type_filter = ft.Dropdown(label="Filtrer par type de viande", width=300, dense=True, on_select=self._on_meat_type_filter)
-        self.category_filter = ft.Dropdown(label="Filtrer par catégorie", width=300, dense=True, disabled=True, on_select=self._on_category_change)
+        self.meat_type_filter = ft.Dropdown(label="Filtrer par type de viande", expand=True, dense=True, on_select=self._on_meat_type_filter)
+        self.category_filter = ft.Dropdown(label="Filtrer par catégorie", expand=True, dense=True, disabled=True, on_select=self._on_category_change)
 
         self.content = ft.Container(
             padding=20,
@@ -41,8 +41,8 @@ class ManageProductsView:
                 self.meat_type_filter,
                 self.category_filter,
                 ft.Row([
-                    ft.Button("Ajouter un produit", on_click=self._open_add_dialog, icon=ft.Icons.ADD, width=145),
-                    ft.Button("Types de viande", on_click=self._open_meat_dialog, icon=ft.Icons.CATEGORY, width=145),
+                    ft.Button("Ajouter un produit", on_click=self._open_add_dialog, icon=ft.Icons.ADD, expand=True),
+                    ft.Button("Types de viande", on_click=self._open_meat_dialog, icon=ft.Icons.CATEGORY, expand=True),
                 ], spacing=8),
                 ft.Divider(),
                 ft.Row([ft.Container(expand=True), self.refresh_btn]),
@@ -138,50 +138,66 @@ class ManageProductsView:
             logger.warning("meat_vm is None, cannot open meat dialog")
             return
         logger.info("Opening meat type dialog")
-        asyncio.create_task(self.meat_vm.load_meat_types_command())
 
         meat_list = ft.Column(spacing=6, scroll=ft.ScrollMode.AUTO, height=200)
         cat_list = ft.Column(spacing=6, scroll=ft.ScrollMode.AUTO, height=150)
         new_mt_field = ft.TextField(label="Nouveau type de viande", dense=True, expand=True)
         new_cat_field = ft.TextField(label="Nouvelle catégorie", dense=True, expand=True)
 
-        def _on_meat_vm_changed(prop):
-            if prop == "meat_types" or prop == "selected_meat_type":
-                meat_list.controls.clear()
-                for mt in self.meat_vm.meat_types:
-                    selected = self.meat_vm.selected_meat_type and self.meat_vm.selected_meat_type.id == mt.id
-                    meat_list.controls.append(
-                        ft.Container(
-                            bgcolor=ft.Colors.RED_100 if selected else ft.Colors.TRANSPARENT,
-                            border_radius=8,
-                            padding=8,
-                            content=ft.Row([
-                                ft.Icon(ft.Icons.CHECK_CIRCLE if selected else ft.Icons.RADIO_BUTTON_UNCHECKED,
-                                        size=16, color=ft.Colors.RED if selected else ft.Colors.GREY_400),
-                                ft.TextButton(mt.name, on_click=lambda ev, m=mt: asyncio.create_task(self.meat_vm.select_meat_type(m))),
-                                ft.Container(expand=True),
-                                ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.RED, icon_size=18,
-                                              on_click=lambda ev, mid=str(mt.id), mn=mt.name: (logger.info(f"Delete MT clicked: {mid}"), confirm_dialog(self.page, "Supprimer le type de viande", f"Supprimer '{mn}' ?", lambda: asyncio.create_task(self.meat_vm.delete_meat_type_command(mid))))),
-                            ])
-                        )
-                    )
-                self.page.update()
-            elif prop == "categories":
-                cat_list.controls.clear()
-                if not self.meat_vm.categories:
-                    cat_list.controls.append(ft.Text("Sélectionnez un type de viande pour voir les catégories", size=12, color=ft.Colors.GREY_600))
-                for cat in self.meat_vm.categories:
-                    cat_list.controls.append(
-                        ft.Row([
-                            ft.Text(cat.name, size=14),
+        def _render_meat_types():
+            meat_list.controls.clear()
+            for mt in self.meat_vm.meat_types:
+                selected = self.meat_vm.selected_meat_type and self.meat_vm.selected_meat_type.id == mt.id
+                meat_list.controls.append(
+                    ft.Container(
+                        bgcolor=ft.Colors.RED_100 if selected else ft.Colors.TRANSPARENT,
+                        border_radius=8,
+                        padding=8,
+                        content=ft.Row([
+                            ft.Icon(ft.Icons.CHECK_CIRCLE if selected else ft.Icons.RADIO_BUTTON_UNCHECKED,
+                                    size=16, color=ft.Colors.RED if selected else ft.Colors.GREY_400),
+                            ft.TextButton(mt.name, on_click=lambda ev, m=mt: asyncio.create_task(self.meat_vm.select_meat_type(m))),
                             ft.Container(expand=True),
+                            ft.IconButton(ft.Icons.EDIT_OUTLINED, icon_size=18,
+                                          on_click=lambda ev, mid=str(mt.id), mn=mt.name: self._edit_mt_in_dialog(mid, mn)),
                             ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.RED, icon_size=18,
-                                          on_click=lambda ev, cid=str(cat.id), cn=cat.name: (logger.info(f"Delete Cat clicked: {cid}"), confirm_dialog(self.page, "Supprimer la catégorie", f"Supprimer '{cn}' ?", lambda: asyncio.create_task(self.meat_vm.delete_category_command(cid))))),
+                                          on_click=lambda ev, mid=str(mt.id), mn=mt.name: (logger.info(f"Delete MT clicked: {mid}"), confirm_dialog(self.page, "Supprimer le type de viande", f"Supprimer '{mn}' ?", lambda: asyncio.create_task(self.meat_vm.delete_meat_type_command(mid))))),
                         ])
                     )
+                )
+
+        def _render_categories():
+            cat_list.controls.clear()
+            if not self.meat_vm.categories:
+                cat_list.controls.append(ft.Text("Sélectionnez un type de viande pour voir les catégories", size=12, color=ft.Colors.GREY_600))
+            for cat in self.meat_vm.categories:
+                cat_list.controls.append(
+                    ft.Row([
+                        ft.Text(cat.name, size=14),
+                        ft.Container(expand=True),
+                        ft.IconButton(ft.Icons.EDIT_OUTLINED, icon_size=18,
+                                      on_click=lambda ev, cid=str(cat.id), cn=cat.name: self._edit_cat_in_dialog(cid, cn)),
+                        ft.IconButton(ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.RED, icon_size=18,
+                                      on_click=lambda ev, cid=str(cat.id), cn=cat.name: (logger.info(f"Delete Cat clicked: {cid}"), confirm_dialog(self.page, "Supprimer la catégorie", f"Supprimer '{cn}' ?", lambda: asyncio.create_task(self.meat_vm.delete_category_command(cid))))),
+                    ])
+                )
+
+        def _on_meat_vm_changed(prop):
+            if prop == "meat_types" or prop == "selected_meat_type":
+                _render_meat_types()
+                self.page.update()
+            elif prop == "categories":
+                _render_categories()
                 self.page.update()
 
         self.meat_vm.add_listener(_on_meat_vm_changed)
+
+        # Populate immediately from existing data
+        _render_meat_types()
+        _render_categories()
+
+        # Reload from API
+        asyncio.create_task(self.meat_vm.load_meat_types_command())
 
         async def _add_mt(ev):
             self.meat_vm.new_meat_type_name = new_mt_field.value or ""
@@ -351,6 +367,52 @@ class ManageProductsView:
 
     async def _toggle_avail(self, product):
         await self.vm.toggle_availability_command(product)
+
+    def _edit_mt_in_dialog(self, meat_type_id: str, current_name: str):
+        name_field = ft.TextField(label="Nom", value=current_name, autofocus=True, width=280)
+
+        async def _do_save(ev):
+            self.page.pop_dialog()
+            new_name = name_field.value or ""
+            if new_name and new_name != current_name:
+                logger.info(f"Editing meat type {meat_type_id} -> {new_name}")
+                await self.meat_vm.update_meat_type_command(meat_type_id, new_name)
+
+        self.page.show_dialog(
+            ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Modifier le type de viande"),
+                content=ft.Column([name_field], tight=True),
+                actions=[
+                    ft.TextButton(content=ft.Text("Annuler"), on_click=lambda e: self.page.pop_dialog()),
+                    ft.TextButton(content=ft.Text("Enregistrer", color=ft.Colors.RED), on_click=lambda e: asyncio.create_task(_do_save(e))),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+        )
+
+    def _edit_cat_in_dialog(self, category_id: str, current_name: str):
+        name_field = ft.TextField(label="Nom", value=current_name, autofocus=True, width=280)
+
+        async def _do_save(ev):
+            self.page.pop_dialog()
+            new_name = name_field.value or ""
+            if new_name and new_name != current_name:
+                logger.info(f"Editing category {category_id} -> {new_name}")
+                await self.meat_vm.update_category_command(category_id, new_name)
+
+        self.page.show_dialog(
+            ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Modifier la catégorie"),
+                content=ft.Column([name_field], tight=True),
+                actions=[
+                    ft.TextButton(content=ft.Text("Annuler"), on_click=lambda e: self.page.pop_dialog()),
+                    ft.TextButton(content=ft.Text("Enregistrer", color=ft.Colors.RED), on_click=lambda e: asyncio.create_task(_do_save(e))),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+        )
 
     async def _delete(self, product_id: str):
         logger.info(f"Deleting product: {product_id}")

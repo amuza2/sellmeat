@@ -110,12 +110,17 @@ def loading_skeletons(count: int = 4) -> ft.Column:
     return ft.Column([skeleton_card() for _ in range(count)], spacing=8)
 
 
-def empty_state(message: str) -> ft.Column:
-    return ft.Column(
-        [ft.Icon(ft.Icons.INBOX_OUTLINED, size=48, color=ft.Colors.GREY_400),
-         ft.Text(message, color=ft.Colors.GREY_500, size=14, text_align=ft.TextAlign.CENTER)],
-        alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+def empty_state(message: str) -> ft.Container:
+    return ft.Container(
+        expand=True,
+        alignment=ft.Alignment(0, 0),
+        content=ft.Column(
+            [ft.Icon(ft.Icons.INBOX_OUTLINED, size=48, color=ft.Colors.GREY_400),
+             ft.Text(message, color=ft.Colors.GREY_500, size=14, text_align=ft.TextAlign.CENTER)],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True,
+        ),
     )
 
 

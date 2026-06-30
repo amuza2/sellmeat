@@ -3,6 +3,7 @@ import logging
 from decimal import Decimal
 
 import flet as ft
+import httpx
 
 logging.basicConfig(level=logging.INFO, format="%(name)s %(levelname)s: %(message)s")
 
@@ -32,7 +33,7 @@ from views.manage_settings_view import ManageSettingsView
 
 
 def main(page: ft.Page):
-    page.title = "SellMeat"
+    page.title = "لحم طازج"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.theme = ft.Theme(color_scheme_seed=ft.Colors.RED)
 
@@ -177,14 +178,36 @@ def main(page: ft.Page):
             return _build_seller_nav(selected_index)
         return _build_customer_nav(selected_index)
 
-    # Start at auth screen or restore session
-    if session.is_authenticated:
+    async def initialize_app():
+        if not session.is_authenticated:
+            navigate("auth")
+            return
+        try:
+            restored = await api.restore_session()
+        except httpx.HTTPError:
+            restored = True
+        if not restored:
+            navigate("auth")
+            return
         if session.is_seller:
             navigate("seller_dashboard")
         else:
             navigate("catalog")
-    else:
-        navigate("auth")
+
+    page.views.append(
+        ft.View(
+            route="/loading",
+            controls=[
+                ft.Container(
+                    expand=True,
+                    alignment=ft.Alignment(0, 0),
+                    content=ft.ProgressRing(),
+                )
+            ],
+        )
+    )
+    page.update()
+    asyncio.create_task(initialize_app())
 
 
 if __name__ == "__main__":
