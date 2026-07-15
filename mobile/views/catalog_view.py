@@ -192,11 +192,9 @@ class CatalogView:
         )
 
     def _select_meat_type(self, meat_type):
-        import asyncio
         asyncio.create_task(self.vm.select_meat_type(meat_type))
 
     def _select_category(self, category):
-        import asyncio
         asyncio.create_task(self.vm.select_category(category))
 
     def _on_view_cart(self, e):

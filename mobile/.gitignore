@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# Flet build output
+build/
+*.apk
+*.aab
+*.ipa
+
+# Session and secrets
+.session.json
+*.key
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

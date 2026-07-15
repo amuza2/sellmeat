@@ -1,5 +1,6 @@
 import flet as ft
 import asyncio
+import re
 
 from viewmodels.order_detail_viewmodel import OrderDetailViewModel
 from models.order import OrderStatus, PaymentStatus
@@ -194,7 +195,6 @@ class OrderDetailView:
         self.on_back()
 
     async def _copy_to_clipboard(self, text):
-        import re
         clean = re.sub(r'[^\d+]', '', text)
         await self.page.clipboard.set(clean)
         show_snackbar(self.page, "Numéro de téléphone copié", 1500)

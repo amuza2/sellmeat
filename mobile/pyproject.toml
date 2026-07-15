@@ -1,10 +1,10 @@
 [project]
-name = "sellmeat-mobile"
+name = "lahem-tazj"
 version = "0.1.0"
-description = "SellMeat mobile app built with Flet and MVVM"
+description = "لحم طازج - Fresh meat ordering mobile app built with Flet and MVVM"
 requires-python = ">=3.11"
 dependencies = [
-    "flet>=0.25.0",
+    "flet==0.85.3",
     "httpx>=0.27.0",
     "pydantic>=2.0.0",
     "certifi>=2024.0.0",
@@ -16,3 +16,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["models*", "viewmodels*", "views*", "services*", "components*"]
+
+[tool.flet]
+org_name = "sellmeat"
+product_name = "Lahem Tazj"
+

@@ -12,7 +12,7 @@ from services.api import APIClient
 from models.order import OrderStatus, PaymentStatus
 from viewmodels.auth_viewmodel import AuthViewModel
 from viewmodels.catalog_viewmodel import CatalogViewModel
-from viewmodels.cart_viewmodel import CartViewModel, CartItem
+from viewmodels.cart_viewmodel import CartViewModel
 from viewmodels.customer_orders_viewmodel import CustomerOrdersViewModel
 from viewmodels.order_detail_viewmodel import OrderDetailViewModel
 from viewmodels.seller_dashboard_viewmodel import SellerDashboardViewModel
@@ -40,9 +40,6 @@ def main(page: ft.Page):
     session = Session()
     api = APIClient(session)
 
-    # Shared cart items across catalog and cart views
-    cart_items: list[CartItem] = []
-
     # ViewModels
     auth_vm = AuthViewModel(api, session)
     catalog_vm = CatalogViewModel(api)
@@ -56,14 +53,8 @@ def main(page: ft.Page):
     manage_slots_vm = ManageSlotsViewModel(api)
     manage_settings_vm = ManageSettingsViewModel(api)
 
-    current_view = None
-
     def navigate(route: str, *args):
-        nonlocal current_view
         page.views.clear()
-
-        customer_routes = ["catalog", "cart", "orders"]
-        seller_routes = ["seller_dashboard", "seller_orders", "manage_meat", "manage_products", "manage_slots"]
 
         if route == "auth":
             auth_vm.reset()
